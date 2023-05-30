@@ -5,6 +5,7 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 .idea
+.pb
 ### STS ###
 .apt_generated
 .classpath
