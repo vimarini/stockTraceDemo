@@ -30,7 +30,7 @@ class StockService {
     private val NOTFOUND: Float = 3.14151617F
 
     fun captureData(stock: Stock) {
-        Flux.interval(Duration.ofSeconds(30))
+        Flux.interval(Duration.ofSeconds(10))
             .flatMap { Flux.just(seleniumStock(stock.stockName)) }
             .takeWhile { value -> value != NOTFOUND }
             .subscribe { value ->
@@ -55,7 +55,10 @@ class StockService {
 
 
     fun seleniumStock(stock: String): Float {
-        System.setProperty("webdriver.chrome.driver", "/home/vimarini/chromedriver")
+        System.setProperty("webdriver.chrome.driver", "/home/vimarini/git/stockTraceDemo/stock-trace/chromedriver")
+
+//        ////docker
+//        System.setProperty("webdriver.chrome.driver", "/app/chromedriver")
 
         val chromeOptions = ChromeOptions()
         chromeOptions.addArguments("--headless")
