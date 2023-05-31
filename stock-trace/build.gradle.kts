@@ -16,11 +16,17 @@ repositories {
 }
 
 dependencies {
+	implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
 	implementation("org.springframework.boot:spring-boot-starter-webflux")
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 	implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
+	implementation("io.r2dbc:r2dbc-postgresql:0.8.2.RELEASE")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
+	implementation("org.seleniumhq.selenium:selenium-java:2.41.0")
 	implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
+	implementation ("io.projectreactor:reactor-tools")
+	implementation ("javax.validation:validation-api:2.0.1.Final")
+	implementation ("org.hibernate.validator:hibernate-validator:8.0.0.Final")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("io.projectreactor:reactor-test")
 }
