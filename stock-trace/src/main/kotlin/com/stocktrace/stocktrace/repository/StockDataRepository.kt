@@ -5,5 +5,5 @@ import org.springframework.data.repository.reactive.ReactiveCrudRepository
 import reactor.core.publisher.Flux
 
 interface StockDataRepository : ReactiveCrudRepository<StockData,Int>{
-    fun findByName(name: String): Flux<StockData>
+    fun findByNameIgnoreCase(name: String): Flux<StockData>
 }

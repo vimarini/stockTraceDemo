@@ -14,6 +14,7 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.bodyToMono
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
+import java.io.File
 import java.time.Duration
 import java.util.*
 import kotlin.NoSuchElementException
@@ -30,7 +31,7 @@ class StockService {
     private val NOTFOUND: Float = 3.14151617F
 
     fun captureData(stock: Stock) {
-        Flux.interval(Duration.ofSeconds(10))
+        Flux.interval(Duration.ofSeconds(30))
             .flatMap { Flux.just(seleniumStock(stock.stockName)) }
             .takeWhile { value -> value != NOTFOUND }
             .subscribe { value ->
@@ -55,10 +56,9 @@ class StockService {
 
 
     fun seleniumStock(stock: String): Float {
-        System.setProperty("webdriver.chrome.driver", "/home/vimarini/git/stockTraceDemo/stock-trace/chromedriver")
+        val currentPath = File("").absolutePath
 
-//        ////docker
-//        System.setProperty("webdriver.chrome.driver", "/app/chromedriver")
+        System.setProperty("webdriver.chrome.driver", "${currentPath}/chromedriver.exe")
 
         val chromeOptions = ChromeOptions()
         chromeOptions.addArguments("--headless")
@@ -93,7 +93,13 @@ class StockService {
         return stockDataRepository.save(stockData)
     }
 
-    fun findByName(stockName: String): Flux<StockData> {
-        return stockDataRepository.findByName(stockName)
+    fun findByName(stockName: String): Mono<StockData> {
+        return stockDataRepository.findByNameIgnoreCase(stockName)
+            .reduce { stock1, stock2 ->
+                if (stock1.time.isAfter(stock2.time))
+                    stock1
+                else
+                    stock2
+            }
     }
 }
