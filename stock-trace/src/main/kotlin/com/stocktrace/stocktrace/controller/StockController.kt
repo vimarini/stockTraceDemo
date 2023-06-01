@@ -14,19 +14,22 @@ import javax.validation.Valid
 class StockController(private val stockService: StockService) {
 
     @PostMapping("/request")
+    @CrossOrigin
     @ResponseStatus(HttpStatus.CREATED)
     fun sendRequestSelenium(@RequestBody stock: Stock){
         return stockService.captureData(stock)
     }
 
     @PostMapping
+    @CrossOrigin
     @ResponseStatus(HttpStatus.CREATED)
     fun save(@Valid @RequestBody stockData: StockData) : Mono<StockData> {
         return stockService.save(stockData)
     }
 
     @GetMapping(path = ["{stock}"])
-    fun getStock(@PathVariable stock : String) : Flux<StockData> {
+    @CrossOrigin
+    fun getStock(@PathVariable stock : String) : Mono<StockData> {
         return stockService.findByName(stock)
     }
 }
