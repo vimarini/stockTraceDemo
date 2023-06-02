@@ -2,6 +2,7 @@ package com.stocktrace.stocktrace.service
 
 import com.stocktrace.stocktrace.domain.Stock
 import com.stocktrace.stocktrace.domain.StockData
+import com.stocktrace.stocktrace.domain.StockResponseFromPython
 import com.stocktrace.stocktrace.repository.StockDataRepository
 import org.openqa.selenium.By
 import org.openqa.selenium.WebDriver
@@ -16,7 +17,6 @@ import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import java.io.File
 import java.time.Duration
-import java.util.*
 import kotlin.NoSuchElementException
 
 @Service
@@ -31,34 +31,37 @@ class StockService {
     private val NOTFOUND: Float = 3.14151617F
 
     fun captureData(stock: Stock) {
-        Flux.interval(Duration.ofSeconds(30))
-            .flatMap { Flux.just(seleniumStock(stock.stockName)) }
+        Flux.interval(Duration.ofSeconds(20))
+            .flatMap { Flux.just(webClientGetStock(stock.stockName)) }
             .takeWhile { value -> value != NOTFOUND }
             .subscribe { value ->
-                if (value < stock.minValue.toFloat()) webClientCall(
+                if (value < stock.minValue.toFloat()) webClientPostCall(
                     StockData(
                         stock.stockName,
                         "BUY",
                         value.toString()
                     )
                 )
-                else if (value > stock.maxValue.toFloat()) webClientCall(
+                else if (value > stock.maxValue.toFloat()) webClientPostCall(
                     StockData(
                         stock.stockName,
                         "SELL",
                         value.toString()
                     )
                 )
-                else webClientCall(StockData(stock.stockName, "WAIT", value.toString()))
+                else webClientPostCall(StockData(stock.stockName, "WAIT", value.toString()))
             }
-
     }
 
 
     fun seleniumStock(stock: String): Float {
         val currentPath = File("").absolutePath
 
-        System.setProperty("webdriver.chrome.driver", "${currentPath}/chromedriver.exe")
+        //linux
+        System.setProperty("webdriver.chrome.driver", "${currentPath}/usr/local/bin/chromedriver")
+
+        //win
+//        System.setProperty("webdriver.chrome.driver", "${currentPath}/chromedriver.exe")
 
         val chromeOptions = ChromeOptions()
         chromeOptions.addArguments("--headless")
@@ -77,16 +80,39 @@ class StockService {
             return NOTFOUND
         }
 
+        driver.close()
         return currentValue.replace(",", ".").toFloat()
     }
 
-    fun webClientCall(stockData: StockData) {
+    fun webClientPostCall(stockData: StockData) {
         webClient.post()
             .uri("/stock")
             .body(BodyInserters.fromValue(stockData))
             .retrieve()
             .bodyToMono(String::class.java)
             .subscribe()
+    }
+
+    fun webClientGetStock(stock: String) : Float{
+        val updateWebClient = webClient.mutate()
+            .baseUrl("http://localhost:5000")
+            .build()
+        var price = NOTFOUND
+        var response = updateWebClient.get()
+                    .uri("/${stock}")
+                    .exchangeToMono { res ->
+                        when {
+                            res.statusCode().is2xxSuccessful -> res.bodyToMono(StockResponseFromPython::class.java)
+                            else -> null
+                        }
+                    }
+
+        response.subscribe {res ->
+            if(res is StockResponseFromPython) {
+                price = res.price.toFloat()
+            }
+        }
+        return price
     }
 
     fun save(stockData: StockData): Mono<StockData> {

@@ -10,5 +10,13 @@ services:
       - ./scripts:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432"
+  front:
+    image: marinisz/stock-trace-front:4.0
+    ports:
+      - "3000:80"
+  selenuim:
+    image: marinisz/stock-trace-back-python:1.0
+    ports:
+      - "5000:5000"
 volumes:
   data:
