@@ -16,7 +16,7 @@ class StockController(private val stockService: StockService) {
     @PostMapping("/request")
     @CrossOrigin
     @ResponseStatus(HttpStatus.CREATED)
-    fun sendRequestSelenium(@RequestBody stock: Stock){
+    fun startSearch(@RequestBody stock: Stock){
         return stockService.captureData(stock)
     }
 
