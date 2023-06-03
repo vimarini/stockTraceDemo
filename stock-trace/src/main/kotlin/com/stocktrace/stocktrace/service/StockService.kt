@@ -1,5 +1,6 @@
 package com.stocktrace.stocktrace.service
 
+import com.google.gson.Gson
 import com.stocktrace.stocktrace.domain.Stock
 import com.stocktrace.stocktrace.domain.StockData
 import com.stocktrace.stocktrace.domain.StockResponseFromPython
@@ -12,12 +13,14 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.WebClient
-import org.springframework.web.reactive.function.client.bodyToMono
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import java.io.File
+import java.net.URI
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
 import java.time.Duration
-import kotlin.NoSuchElementException
 
 @Service
 class StockService {
@@ -31,9 +34,10 @@ class StockService {
     private val NOTFOUND: Float = 3.14151617F
 
     fun captureData(stock: Stock) {
+        var count = 0;
         Flux.interval(Duration.ofSeconds(20))
             .flatMap { Flux.just(webClientGetStock(stock.stockName)) }
-            .takeWhile { value -> value != NOTFOUND }
+            .takeWhile { value -> value != NOTFOUND || count>=40}
             .subscribe { value ->
                 if (value < stock.minValue.toFloat()) webClientPostCall(
                     StockData(
@@ -50,6 +54,7 @@ class StockService {
                     )
                 )
                 else webClientPostCall(StockData(stock.stockName, "WAIT", value.toString()))
+                count++
             }
     }
 
@@ -94,23 +99,21 @@ class StockService {
     }
 
     fun webClientGetStock(stock: String) : Float{
-        val updateWebClient = webClient.mutate()
-            .baseUrl("http://localhost:5000")
-            .build()
         var price = NOTFOUND
-        var response = updateWebClient.get()
-                    .uri("/${stock}")
-                    .exchangeToMono { res ->
-                        when {
-                            res.statusCode().is2xxSuccessful -> res.bodyToMono(StockResponseFromPython::class.java)
-                            else -> null
-                        }
-                    }
+        val client = HttpClient.newHttpClient()
 
-        response.subscribe {res ->
-            if(res is StockResponseFromPython) {
-                price = res.price.toFloat()
-            }
+        val request = HttpRequest.newBuilder()
+            .uri(URI.create("http://localhost:5000/${stock}"))
+            .build()
+
+        val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+
+        val statusCode = response.statusCode()
+        val responseBody = response.body()
+        val gson = Gson()
+        val stockResponseFromPython = gson.fromJson(responseBody, StockResponseFromPython::class.java)
+        if (statusCode==200) {
+            price = stockResponseFromPython.price.replace(",",".").toFloat()
         }
         return price
     }
