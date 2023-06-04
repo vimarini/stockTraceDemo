@@ -10,11 +10,9 @@ services:
       - ./scripts:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432"
-    networks:
-      - stock-trace-network
 
   front:
-    image: marinisz/stock-trace-front:5.0
+    image: marinisz/stock-trace-front:7.0
     ports:
       - "3000:80"
 
@@ -22,21 +20,3 @@ services:
     image: marinisz/stock-trace-back-python:1.0
     ports:
       - "5000:5000"
-
-  app:
-    build:
-      context: .
-    ports:
-      - "8080:8080"
-    environment:
-      SPRING_R2DBC_USERNAME: root
-      SPRING_R2DBC_PASSWORD: root
-      SPRING_R2DBC_URL: r2dbc:postgresql://db:5432/postgres?schema=public
-    depends_on:
-      - db
-    networks:
-      - stock-trace-network
-
-networks:
-  stock-trace-network:
-    driver: bridge
