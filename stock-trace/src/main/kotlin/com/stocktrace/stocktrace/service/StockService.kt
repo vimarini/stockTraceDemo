@@ -29,6 +29,8 @@ class StockService {
 
     private val NOTFOUND: Float = 3.14151617F
 
+    var localStockHash = mutableListOf<StockData>();
+
     fun captureData(stock: Stock) {
         var count = 0
         var disposable: Disposable? = null
@@ -51,6 +53,40 @@ class StockService {
                     )
                 )
                 else webClientPostCall(StockData(stock.stockName, "WAIT", value.toString()))
+                count++
+                if (count >= 10) {
+                    disposable?.dispose()
+                    return@subscribe
+                }
+            }
+    }
+
+    fun captureDataLocal(stock: Stock) {
+        var count = 0
+        var disposable: Disposable? = null
+        disposable = Flux.interval(Duration.ofSeconds(20))
+            .flatMap { Flux.just(webClientGetStock(stock.stockName)) }
+            .takeWhile { value -> (value != NOTFOUND) }
+            .subscribe { value ->
+                if (value < stock.minValue.toFloat()){
+                    localStockHash.add(StockData(
+                        stock.stockName,
+                        "BUY",
+                        value.toString()
+                    ))
+                }
+                else if (value > stock.maxValue.toFloat()){
+                    localStockHash.add(StockData(
+                        stock.stockName,
+                        "SELL",
+                        value.toString()
+                    ))
+                }
+                else localStockHash.add(StockData(
+                    stock.stockName,
+                    "WAIT",
+                    value.toString()
+                ))
                 count++
                 if (count >= 10) {
                     disposable?.dispose()
@@ -105,5 +141,20 @@ class StockService {
                 else
                     stock2
             }
+    }
+
+    fun findByNameLocal(stockName: String): StockData {
+        return if (localStockHash.isNotEmpty()) {
+            localStockHash.filter { value -> value.name == stockName }
+                .reduce { stock1, stock2 ->
+                    if (stock1.time.isAfter(stock2.time))
+                        stock1
+                    else
+                        stock2
+                }
+        } else {
+            StockData("","","")
+        }
+
     }
 }
