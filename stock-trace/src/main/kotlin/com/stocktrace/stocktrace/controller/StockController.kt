@@ -42,7 +42,7 @@ class StockController(private val stockService: StockService) {
 
     @GetMapping(path = ["{stock}"])
     @CrossOrigin
-    fun getStock(@PathVariable stock : String) : StockData {
+    fun getStock(@PathVariable stock : String) : Mono<StockData> {
         return stockService.findByNameLocal(stock)
     }
 }

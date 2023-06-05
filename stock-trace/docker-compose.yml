@@ -6,17 +6,28 @@ services:
     image: marinisz/stock-trace-front:7.0
     ports:
       - "3000:80"
+    depends_on:
+      - app
+    networks:
+      - my-net
 
-  selenuim:
+  selenium:
     image: marinisz/stock-trace-back-python:1.0
     ports:
       - "5000:5000"
+    networks:
+      - my-net
 
   app:
     build:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8000:8000"
-    volumes:
-      - ./stock-trace:/src
+      - "8080:8080"
+    depends_on:
+      - selenium
+    networks:
+      - my-net
+
+networks:
+  my-net:

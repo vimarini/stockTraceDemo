@@ -65,28 +65,33 @@ class StockService {
         var count = 0
         var disposable: Disposable? = null
         disposable = Flux.interval(Duration.ofSeconds(20))
+            .log()
             .flatMap { Flux.just(webClientGetStock(stock.stockName)) }
             .takeWhile { value -> (value != NOTFOUND) }
             .subscribe { value ->
-                if (value < stock.minValue.toFloat()){
-                    localStockHash.add(StockData(
+                if (value < stock.minValue.toFloat()) {
+                    localStockHash.add(
+                        StockData(
+                            stock.stockName,
+                            "BUY",
+                            value.toString()
+                        )
+                    )
+                } else if (value > stock.maxValue.toFloat()) {
+                    localStockHash.add(
+                        StockData(
+                            stock.stockName,
+                            "SELL",
+                            value.toString()
+                        )
+                    )
+                } else localStockHash.add(
+                    StockData(
                         stock.stockName,
-                        "BUY",
+                        "WAIT",
                         value.toString()
-                    ))
-                }
-                else if (value > stock.maxValue.toFloat()){
-                    localStockHash.add(StockData(
-                        stock.stockName,
-                        "SELL",
-                        value.toString()
-                    ))
-                }
-                else localStockHash.add(StockData(
-                    stock.stockName,
-                    "WAIT",
-                    value.toString()
-                ))
+                    )
+                )
                 count++
                 if (count >= 10) {
                     disposable?.dispose()
@@ -104,15 +109,15 @@ class StockService {
             .subscribe()
     }
 
-    fun webClientGetStock(stock: String) : Float{
+    fun webClientGetStock(stock: String): Float {
         var price = NOTFOUND
         val client = HttpClient.newHttpClient()
         lateinit var request: HttpRequest
-        try{
+        try {
             request = HttpRequest.newBuilder()
                 .uri(URI.create("http://localhost:5000/${stock}"))
                 .build()
-        } catch (ex:Exception) {
+        } catch (ex: Exception) {
             ex.printStackTrace()
             return price
         }
@@ -123,8 +128,8 @@ class StockService {
         val responseBody = response.body()
         val gson = Gson()
         val stockResponseFromPython = gson.fromJson(responseBody, StockResponseFromPython::class.java)
-        if (statusCode==200) {
-            price = stockResponseFromPython.price.replace(",",".").toFloat()
+        if (statusCode == 200) {
+            price = stockResponseFromPython.price.replace(",", ".").toFloat()
         }
         return price
     }
@@ -135,6 +140,7 @@ class StockService {
 
     fun findByName(stockName: String): Mono<StockData> {
         return stockDataRepository.findByNameIgnoreCase(stockName)
+            .log()
             .reduce { stock1, stock2 ->
                 if (stock1.time.isAfter(stock2.time))
                     stock1
@@ -143,17 +149,19 @@ class StockService {
             }
     }
 
-    fun findByNameLocal(stockName: String): StockData {
+    fun findByNameLocal(stockName: String): Mono<StockData> {
         return if (localStockHash.isNotEmpty()) {
-            localStockHash.filter { value -> value.name == stockName }
-                .reduce { stock1, stock2 ->
-                    if (stock1.time.isAfter(stock2.time))
-                        stock1
-                    else
-                        stock2
-                }
+            Mono.just(
+                localStockHash.filter { value -> value.name == stockName }
+                    .reduce { stock1, stock2 ->
+                        if (stock1.time.isAfter(stock2.time))
+                            stock1
+                        else
+                            stock2
+                    }
+            )
         } else {
-            StockData("","","")
+            Mono.empty()
         }
 
     }
