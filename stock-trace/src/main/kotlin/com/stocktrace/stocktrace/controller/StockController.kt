@@ -13,11 +13,18 @@ import javax.validation.Valid
 @RequestMapping("stock")
 class StockController(private val stockService: StockService) {
 
+//    @PostMapping("/request")
+//    @CrossOrigin
+//    @ResponseStatus(HttpStatus.CREATED)
+//    fun startSearch(@RequestBody stock: Stock){
+//        return stockService.captureData(stock)
+//    }
+
     @PostMapping("/request")
     @CrossOrigin
     @ResponseStatus(HttpStatus.CREATED)
-    fun sendRequestSelenium(@RequestBody stock: Stock){
-        return stockService.captureData(stock)
+    fun startSearch(@RequestBody stock: Stock){
+        return stockService.captureDataLocal(stock)
     }
 
     @PostMapping
@@ -27,9 +34,15 @@ class StockController(private val stockService: StockService) {
         return stockService.save(stockData)
     }
 
+//    @GetMapping(path = ["{stock}"])
+//    @CrossOrigin
+//    fun getStock(@PathVariable stock : String) : Mono<StockData> {
+//        return stockService.findByName(stock)
+//    }
+
     @GetMapping(path = ["{stock}"])
     @CrossOrigin
     fun getStock(@PathVariable stock : String) : Mono<StockData> {
-        return stockService.findByName(stock)
+        return stockService.findByNameLocal(stock)
     }
 }
