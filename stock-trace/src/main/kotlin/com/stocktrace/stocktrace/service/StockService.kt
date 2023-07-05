@@ -150,7 +150,7 @@ class StockService {
     }
 
     fun findByNameLocal(stockName: String): Mono<StockData> {
-        return if (localStockHash.isNotEmpty()) {
+        return if (localStockHash.isNotEmpty() && localStockHash.any {it.name==stockName}) {
             Mono.just(
                 localStockHash.filter { value -> value.name == stockName }
                     .reduce { stock1, stock2 ->
@@ -163,6 +163,5 @@ class StockService {
         } else {
             Mono.empty()
         }
-
     }
 }
