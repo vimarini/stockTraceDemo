@@ -10,7 +10,6 @@ run:
 
 or run this docker-compose anywhere:
 ```
-
 version: '3.1'
 
 services:
@@ -30,7 +29,7 @@ services:
     network_mode: "host"
 
   app:
-    image: marinisz/stock-trace-back-kotlin:1.0
+    image: marinisz/stock-trace-back-kotlin:3.0
     ports:
       - "8080:8080"
     depends_on:
